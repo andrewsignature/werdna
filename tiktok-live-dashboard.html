@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LiveFlow — TikTok Live Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #18181f;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.14);
+    --accent: #fe2c55;
+    --accent2: #25f4ee;
+    --accent-glow: rgba(254, 44, 85, 0.18);
+    --text: #f0f0f5;
+    --text2: #9090a8;
+    --text3: #5a5a70;
+    --green: #00e67a;
+    --amber: #f5a623;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Syne', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NOISE TEXTURE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .logo span { color: var(--accent); }
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover { border-color: var(--border-hover); color: var(--text); background: var(--bg3); }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover { background: #e0203d; border-color: #e0203d; color: white; }
+  .btn-ghost { border-color: transparent; }
+  .btn-ghost:hover { border-color: var(--border); }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    z-index: 1;
+    padding: 6rem 2rem 4rem;
+    text-align: center;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(254,44,85,0.12);
+    border: 1px solid rgba(254,44,85,0.3);
+    border-radius: 100px;
+    padding: 4px 14px 4px 8px;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 2rem;
+    font-family: var(--mono);
+  }
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+  .hero h1 {
+    font-family: var(--display);
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 .tiktok-gradient {
+    background: linear-gradient(90deg, var(--accent), #ff6b9d, var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 1.1rem;
+    color: var(--text2);
+    max-width: 540px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+  .hero-cta {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn-large {
+    font-size: 15px;
+    padding: 12px 28px;
+    border-radius: 10px;
+  }
+
+  /* OAUTH FLOW SECTION */
+  .section {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent2);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.75rem;
+  }
+  .section-title {
+    font-family: var(--display);
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.75rem;
+  }
+  .section-sub {
+    color: var(--text2);
+    font-weight: 300;
+    margin-bottom: 2.5rem;
+    max-width: 500px;
+  }
+
+  /* AUTH CARD */
+  .auth-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 480px;
+    margin: 0 auto 3rem;
+    transition: border-color 0.2s;
+  }
+  .auth-card:hover { border-color: var(--border-hover); }
+  .auth-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 1.5rem;
+  }
+  .auth-step:last-child { margin-bottom: 0; }
+  .step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text3);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-active .step-num {
+    background: rgba(254,44,85,0.12);
+    border-color: rgba(254,44,85,0.3);
+    color: var(--accent);
+  }
+  .step-done .step-num {
+    background: rgba(0,230,122,0.1);
+    border-color: rgba(0,230,122,0.3);
+    color: var(--green);
+  }
+  .step-title { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+  .step-desc { font-size: 13px; color: var(--text2); }
+  .auth-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.5rem 0;
+  }
+  .tiktok-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    padding: 14px 20px;
+    color: white;
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.15s ease;
+    letter-spacing: -0.01em;
+  }
+  .tiktok-btn:hover { background: #e0203d; transform: translateY(-1px); }
+  .tiktok-btn:active { transform: translateY(0); }
+  .tiktok-logo {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+  .auth-note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 1rem;
+  }
+  .auth-note a { color: var(--accent2); text-decoration: none; }
+  .auth-note a:hover { text-decoration: underline; }
+
+  /* DASHBOARD PREVIEW */
+  .dashboard-preview {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .preview-header {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .traffic-lights {
+    display: flex;
+    gap: 6px;
+  }
+  .tl {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  .tl-red { background: #ff5f57; }
+  .tl-amber { background: #ffbd2e; }
+  .tl-green { background: #28c840; }
+  .preview-url {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text3);
+  }
+  .preview-body {
+    padding: 1.5rem;
+  }
+
+  /* CONNECT INPUT */
+  .connect-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+  }
+  .connect-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .connect-input:focus { border-color: var(--accent); }
+  .connect-input::placeholder { color: var(--text3); }
+
+  /* STATS GRID */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: border-color 0.15s;
+  }
+  .stat-card:hover { border-color: var(--border-hover); }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-family: var(--display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .stat-value.live { color: var(--accent); }
+  .stat-value.teal { color: var(--accent2); }
+  .stat-value.green { color: var(--green); }
+  .stat-change {
+    font-size: 11px;
+    color: var(--green);
+    margin-top: 4px;
+    font-family: var(--mono);
+  }
+
+  /* MAIN CONTENT GRID */
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+  }
+  @media (max-width: 768px) {
+    .content-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* CHAT FEED */
+  .chat-panel {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-title {
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.5s infinite;
+  }
+  .chat-feed {
+    height: 280px;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .chat-msg {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .chat-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+  }
+  .chat-content {}
+  .chat-user {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 1px;
+  }
+  .chat-text {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.4;
+  }
+  .chat-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    flex-shrink: 0;
+    margin-top: 8px;
+  }
+
+  /* EVENTS PANEL */
+  .events-panel {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .event-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    animation: slideIn 0.3s ease;
+  }
+  .event-item:last-child { border-bottom: none; }
+  .event-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .event-icon.gift { background: rgba(254,44,85,0.12); }
+  .event-icon.follow { background: rgba(37,244,238,0.1); }
+  .event-icon.like { background: rgba(245,166,35,0.1); }
+  .event-icon.join { background: rgba(0,230,122,0.1); }
+  .event-content { flex: 1; min-width: 0; }
+  .event-title { font-size: 12px; font-weight: 500; }
+  .event-user { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .event-val {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .event-val.gift { color: var(--accent); }
+  .event-val.follow { color: var(--accent2); }
+  .event-val.like { color: var(--amber); }
+  .event-val.join { color: var(--green); }
+
+  /* FEATURES GRID */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 2rem;
+  }
+  .feature-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.2s ease;
+  }
+  .feature-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+  }
+  .feature-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 1rem;
+  }
+  .feature-title {
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+  .feature-desc { font-size: 13px; color: var(--text2); line-height: 1.55; }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    overflow-x: auto;
+    position: relative;
+  }
+  .code-block .k { color: #c792ea; }
+  .code-block .s { color: #c3e88d; }
+  .code-block .n { color: var(--accent2); }
+  .code-block .c { color: var(--text3); }
+  .code-block .v { color: #f78c6c; }
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--border-hover); }
+
+  /* FOOTER */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 2rem;
+    text-align: center;
+    color: var(--text3);
+    font-size: 13px;
+  }
+  footer a { color: var(--text2); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+
+  /* SEPARATOR */
+  .sep {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 1rem 0;
+  }
+
+  /* STATUS BADGE */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-family: var(--mono);
+  }
+  .status-live {
+    background: rgba(254,44,85,0.12);
+    border: 1px solid rgba(254,44,85,0.25);
+    color: var(--accent);
+  }
+  .status-offline {
+    background: rgba(90,90,112,0.2);
+    border: 1px solid var(--border);
+    color: var(--text3);
+  }
+  
+  /* GLOW EFFECT */
+  .glow-accent {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(254,44,85,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-teal {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(37,244,238,0.05) 0%, transparent 70%);
+    border-radius: 50%;
+    top: 20%;
+    right: 5%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* MODAL OVERLAY */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border-hover);
+    border-radius: 20px;
+    padding: 2.5rem;
+    max-width: 420px;
+    width: 90%;
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.96) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-title {
+    font-family: var(--display);
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.03em;
+  }
+  .modal-sub { color: var(--text2); font-size: 13px; margin-bottom: 1.5rem; }
+  .api-key-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+  }
+  .api-key-input:focus { border-color: var(--accent); }
+  .input-hint { font-size: 11px; color: var(--text3); margin-bottom: 1.25rem; }
+  .input-hint a { color: var(--accent2); text-decoration: none; }
+  .modal-actions { display: flex; gap: 8px; }
+  .modal-actions .btn { flex: 1; justify-content: center; }
+
+  #gift-overlay .alert-box {
+  background: rgba(10, 10, 15, 0.9);
+  border: 1px solid var(--accent);
+  padding: 30px;
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px var(--accent-glow);
+  animation: giftPopIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes giftPopIn {
+  0% { opacity: 0; transform: scale(0.5) translateY(40px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.preview-content { max-width: 100%; max-height: 100%; object-fit: contain; }
+</style>
+</head>
+<body>
+
+<!-- OAUTH CONNECT MODAL -->
+<div class="modal-overlay" id="connectModal">
+  <div class="modal">
+    <div class="modal-title">Connecter TikTok</div>
+    <div class="modal-sub">Authentification via Euler Stream OAuth 2.0 + QR Code TikTok</div>
+    
+    <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px;">Clé API Euler Stream</label>
+    <input class="api-key-input" type="password" id="apiKeyInput" placeholder="euler_sk_xxxxxxxxxxxxxxxxxxxx">
+    <div class="input-hint">Obtenez votre clé sur <a href="https://www.eulerstream.com" target="_blank">eulerstream.com</a></div>
+
+    <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px;">Client ID OAuth</label>
+    <input class="api-key-input" type="text" id="clientIdInput" placeholder="votre_client_id">
+    <div class="input-hint">Depuis votre <a href="https://www.eulerstream.com" target="_blank">dashboard Euler Stream</a></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="initiateOAuth()">
+        <svg class="tiktok-logo" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05A6.34 6.34 0 003.15 15.3a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.69a8.18 8.18 0 004.79 1.54V6.78a4.85 4.85 0 01-1.03-.09z"/></svg>
+        Autoriser via TikTok
+      </button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05A6.34 6.34 0 003.15 15.3a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.69a8.18 8.18 0 004.79 1.54V6.78a4.85 4.85 0 01-1.03-.09z"/></svg>
+    </div>
+    Live<span>Flow</span>
+  </div>
+  <div class="nav-actions">
+    <a href="#features" class="btn btn-ghost">Fonctionnalités</a>
+    <a href="#integration" class="btn btn-ghost">Intégration</a>
+    <button class="btn btn-primary" onclick="openModal()">Se connecter</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<div style="position:relative">
+  <div class="glow-accent"></div>
+  <div class="glow-teal"></div>
+  <div class="hero">
+    <div class="hero-badge">
+      <div class="badge-dot"></div>
+      Propulsé par Euler Stream & TikTok-Live-Connector
+    </div>
+    <h1>Widgets & alertes<br><span class="tiktok-gradient">TikTok Live</span><br>en temps réel</h1>
+    <p>Connectez votre stream TikTok Live via OAuth Euler, recevez commentaires, cadeaux et événements instantanément. Sans abonnement ridicule.</p>
+    <div class="hero-cta">
+      <button class="btn btn-primary btn-large" onclick="openModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05A6.34 6.34 0 003.15 15.3a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.69a8.18 8.18 0 004.79 1.54V6.78a4.85 4.85 0 01-1.03-.09z"/></svg>
+        Connecter TikTok
+      </button>
+      <a href="https://github.com/zerodytrash/TikTok-Live-Connector" target="_blank" class="btn btn-large">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- DASHBOARD PREVIEW SECTION -->
+<section class="section">
+  <div class="section-label">// dashboard</div>
+  <div class="section-title">Tout votre live, une interface</div>
+  <div class="section-sub">Chat, cadeaux, stats en direct. Se connecte en 2 lignes via WebSocket Euler.</div>
+
+  <div class="dashboard-preview">
+    <div class="preview-header">
+      <div class="traffic-lights">
+        <div class="tl tl-red"></div>
+        <div class="tl tl-amber"></div>
+        <div class="tl tl-green"></div>
+      </div>
+      <div class="preview-url">wss://ws.eulerstream.com?uniqueId=@votreusername&apiKey=...</div>
+    </div>
+    <div class="preview-body">
+      <!-- Connect bar -->
+      <div class="connect-bar">
+        <input class="connect-input" type="text" id="usernameInput" placeholder="@votre_tiktok_username" value="">
+        <button class="btn btn-primary" id="connectBtn" onclick="simulateConnect()">
+          <span id="connectBtnText">Se connecter</span>
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Viewers</div>
+          <div class="stat-value live" id="stat-viewers">—</div>
+          <div class="stat-change" id="stat-viewers-change" style="display:none">↑ +12 /min</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Likes</div>
+          <div class="stat-value teal" id="stat-likes">—</div>
+          <div class="stat-change" id="stat-likes-change" style="display:none">↑ en hausse</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cadeaux</div>
+          <div class="stat-value green" id="stat-gifts">—</div>
+          <div class="stat-change" id="stat-gifts-change" style="display:none">💎 roses, lions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Statut</div>
+          <div class="stat-value" style="font-size:1rem;margin-top:4px">
+            <span class="status-badge status-offline" id="live-status">● OFFLINE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content grid -->
+      <div class="content-grid">
+        <!-- Chat feed -->
+        <div class="chat-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <div class="live-dot" id="chat-dot" style="background:var(--text3);animation:none"></div>
+              Chat Live
+            </div>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text3)" id="msg-count">0 messages</span>
+          </div>
+          <div class="chat-feed" id="chatFeed">
+            <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px;font-family:var(--mono)">
+              // en attente de connexion
+            </div>
+          </div>
+        </div>
+
+        <!-- Events panel -->
+        <div class="events-panel">
+          <div class="panel-header">
+            <div class="panel-title">Événements</div>
+          </div>
+          <div id="eventFeed" style="min-height:200px;display:flex;align-items:center;justify-content:center">
+            <span style="font-size:12px;color:var(--text3);font-family:var(--mono)">//  aucun événement</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- INTEGRATION SECTION -->
+<section class="section" id="integration">
+  <div class="section-label">// code</div>
+  <div class="section-title">Intégration en 2 minutes</div>
+  <div class="section-sub">WebSocket Euler Stream — aucune librairie requise côté browser.</div>
+
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode()">copier</button>
+    <span class="c">// 1. Connexion WebSocket via Euler Stream</span><br>
+    <span class="k">const</span> <span class="n">apiKey</span> = <span class="s">"votre_clé_euler"</span>;<br>
+    <span class="k">const</span> <span class="n">uniqueId</span> = <span class="s">"@votre_username"</span>;<br>
+    <br>
+    <span class="k">const</span> <span class="n">ws</span> = <span class="k">new</span> <span class="v">WebSocket</span>(<br>
+    &nbsp;&nbsp;<span class="s">`wss://ws.eulerstream.com?uniqueId=<span style="color:var(--accent2)">${<span class="n">uniqueId</span>}</span>&apiKey=<span style="color:var(--accent2)">${<span class="n">apiKey</span>}</span>`</span><br>
+    );<br>
+    <br>
+    <span class="c">// 2. Écouter les événements live</span><br>
+    <span class="n">ws</span>.<span class="v">onmessage</span> = (<span class="n">event</span>) => {<br>
+    &nbsp;&nbsp;<span class="k">const</span> <span class="n">data</span> = <span class="v">JSON</span>.<span class="v">parse</span>(<span class="n">event</span>.<span class="n">data</span>);<br>
+    &nbsp;&nbsp;<span class="n">data</span>.<span class="n">messages</span>?.<span class="v">forEach</span>((<span class="n">msg</span>) => {<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="k">switch</span>(<span class="n">msg</span>.<span class="n">type</span>) {<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">case</span> <span class="s">'WebcastChatMessage'</span>:  <span class="c">// Commentaire</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">case</span> <span class="s">'WebcastGiftMessage'</span>:  <span class="c">// Cadeau reçu</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">case</span> <span class="s">'WebcastLikeMessage'</span>:  <span class="c">// Like</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">case</span> <span class="s">'WebcastMemberMessage'</span>: <span class="c">// Quelqu'un rejoint</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+    &nbsp;&nbsp;});<br>
+    };<br>
+    <br>
+    <span class="c">// 3. OAuth Flow (pour apps client-facing)</span><br>
+    <span class="k">const</span> <span class="n">authUrl</span> = <span class="k">new</span> <span class="v">URL</span>(<span class="s">'https://www.eulerstream.com/tiktok/oauth/authorize'</span>);<br>
+    <span class="n">authUrl</span>.<span class="n">searchParams</span>.<span class="v">set</span>(<span class="s">'client_id'</span>, <span class="s">'YOUR_CLIENT_ID'</span>);<br>
+    <span class="n">authUrl</span>.<span class="n">searchParams</span>.<span class="v">set</span>(<span class="s">'scope'</span>, <span class="s">'webcast:fetch webcast:live_check'</span>);<br>
+    <span class="n">window</span>.<span class="n">location</span>.<span class="n">href</span> = <span class="n">authUrl</span>.<span class="v">toString</span>();
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-label">// fonctionnalités</div>
+  <div class="section-title">Tout ce dont vous avez besoin</div>
+  <div class="section-sub">Gratuit, open-source, sans compromis.</div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(254,44,85,0.12)">🎁</div>
+      <div class="feature-title">Alertes cadeaux</div>
+      <div class="feature-desc">Détectez chaque cadeau en temps réel avec sa valeur en diamants et le profil de l'envoyeur.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(37,244,238,0.08)">💬</div>
+      <div class="feature-title">Chat unifié</div>
+      <div class="feature-desc">Flux de commentaires filtrés, avec badges VIP, super-fans et emotes custom.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(0,230,122,0.08)">📊</div>
+      <div class="feature-title">Stats live</div>
+      <div class="feature-desc">Viewers, likes, follows et partages mis à jour en continu via WebSocket Euler Stream.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(245,166,35,0.1)">🔐</div>
+      <div class="feature-title">OAuth sécurisé</div>
+      <div class="feature-desc">Authentification par QR Code TikTok via Euler OAuth 2.0. Aucun mot de passe stocké.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(167,139,250,0.1)">🎯</div>
+      <div class="feature-title">Goals & widgets</div>
+      <div class="feature-desc">Objectifs de followers, cadeaux ou likes customisables en overlay OBS.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(254,44,85,0.08)">⚡</div>
+      <div class="feature-title">Zéro latence</div>
+      <div class="feature-desc">Infrastructure Euler Stream avec 99.9% uptime et connexions WebSocket managées.</div>
+    </div>
+  </div>
+</section>
+
+<!-- OAUTH CONNECT SECTION -->
+<section class="section">
+  <div style="max-width:480px;margin:0 auto;text-align:center">
+    <div class="section-label" style="text-align:center">// connexion</div>
+    <div class="section-title" style="text-align:center">Prêt à streamer ?</div>
+    <div class="section-sub" style="text-align:center;margin:0 auto 2rem">Connectez votre compte TikTok en 30 secondes via le flow OAuth Euler.</div>
+    
+    <div class="auth-card">
+      <div class="auth-step step-active" id="step1">
+        <div class="step-num">01</div>
+        <div>
+          <div class="step-title">Clé API Euler Stream</div>
+          <div class="step-desc">Créez un compte sur eulerstream.com et générez votre clé API</div>
+        </div>
+      </div>
+      <div class="auth-step" id="step2">
+        <div class="step-num">02</div>
+        <div>
+          <div class="step-title">Autoriser via TikTok</div>
+          <div class="step-desc">Scannez le QR Code avec l'app TikTok — aucun mot de passe requis</div>
+        </div>
+      </div>
+      <div class="auth-step" id="step3">
+        <div class="step-num">03</div>
+        <div>
+          <div class="step-title">Dashboard prêt</div>
+          <div class="step-desc">Recevez vos événements live en temps réel via WebSocket</div>
+        </div>
+      </div>
+      <div class="auth-divider"></div>
+      <button class="tiktok-btn" onclick="openModal()">
+        <svg class="tiktok-logo" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05A6.34 6.34 0 003.15 15.3a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.69a8.18 8.18 0 004.79 1.54V6.78a4.85 4.85 0 01-1.03-.09z"/></svg>
+        Connecter mon TikTok
+      </button>
+      <div class="auth-note">
+        Propulsé par <a href="https://www.eulerstream.com" target="_blank">Euler Stream</a> OAuth 2.0 ·
+        <a href="https://github.com/zerodytrash/TikTok-Live-Connector" target="_blank">TikTok-Live-Connector</a>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="section" id="animations-config">
+  <div class="section-label">// personnalisation</div>
+  <div class="section-title">Animations de Cadeaux</div>
+  <div class="section-sub">Associez un média (GIF, MP4, PNG) à chaque type de cadeau reçu.</div>
+
+  <div class="features-grid" id="gift-config-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+    <div class="feature-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <div class="feature-title" style="margin-bottom:0">Rose 🌹</div>
+        <span class="status-badge status-offline" id="status-Rose" style="font-size:9px">Inactif</span>
+      </div>
+      <div id="preview-Rose" style="width:100%; height:120px; background:var(--bg); border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:12px;">
+        <span style="color:var(--text3); font-size:11px; font-family:var(--mono)">Aucun média</span>
+      </div>
+      <input type="file" id="file-Rose" style="display:none" accept="image/*,video/*" onchange="handleFileUpload(event, 'Rose')">
+      <button class="btn btn-ghost" style="width:100%; justify-content:center" onclick="document.getElementById('file-Rose').click()">
+        📁 Choisir un fichier
+      </button>
+    </div>
+
+    <div class="feature-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <div class="feature-title" style="margin-bottom:0">Lion 🦁</div>
+        <span class="status-badge status-offline" id="status-Lion" style="font-size:9px">Inactif</span>
+      </div>
+      <div id="preview-Lion" style="width:100%; height:120px; background:var(--bg); border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:12px;">
+        <span style="color:var(--text3); font-size:11px; font-family:var(--mono)">Aucun média</span>
+      </div>
+      <input type="file" id="file-Lion" style="display:none" accept="image/*,video/*" onchange="handleFileUpload(event, 'Lion')">
+      <button class="btn btn-ghost" style="width:100%; justify-content:center" onclick="document.getElementById('file-Lion').click()">
+        📁 Choisir un fichier
+      </button>
+    </div>
+  </div>
+</section>
+
+<div id="gift-overlay" style="position:fixed; inset:0; pointer-events:none; z-index:2000; display:flex; align-items:center; justify-content:center;"></div>
+<footer>
+  <p style="margin-bottom:8px">
+    <strong style="color:var(--text2)">LiveFlow</strong> — Dashboard TikTok Live open source
+  </p>
+  <p>
+    <a href="https://github.com/zerodytrash/TikTok-Live-Connector" target="_blank">TikTok-Live-Connector</a> ·
+    <a href="https://github.com/isaackogan/TikTokLive" target="_blank">TikTokLive (Python)</a> ·
+    <a href="https://www.eulerstream.com" target="_blank">Euler Stream</a> ·
+    <a href="https://www.eulerstream.com/docs/oauth" target="_blank">OAuth Docs</a>
+  </p>
+  <p style="margin-top:12px;font-size:11px">Non affilié à TikTok. Projet open source utilisant des APIs non officielles.</p>
+</footer>
+
+<script>
+  // MODAL
+  function openModal() {
+    document.getElementById('connectModal').classList.add('active');
+  }
+  function closeModal() {
+    document.getElementById('connectModal').classList.remove('active');
+  }
+  document.getElementById('connectModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // OAUTH INITIATION
+  function initiateOAuth() {
+    const clientId = document.getElementById('clientIdInput').value.trim();
+    const apiKey = document.getElementById('apiKeyInput').value.trim();
+    if (!clientId && !apiKey) {
+      alert('Veuillez entrer votre Client ID OAuth ou votre clé API Euler Stream.');
+      return;
+    }
+    if (clientId) {
+      const authUrl = new URL('https://www.eulerstream.com/tiktok/oauth/authorize');
+      authUrl.searchParams.set('client_id', clientId);
+      authUrl.searchParams.set('redirect_uri', window.location.href.split('?')[0]);
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('scope', 'webcast:fetch webcast:live_check');
+      authUrl.searchParams.set('state', Math.random().toString(36).slice(2));
+      window.open(authUrl.toString(), '_blank');
+    } else {
+      localStorage.setItem('euler_api_key', apiKey);
+      closeModal();
+      alert('Clé API sauvegardée! Entrez votre @username dans le dashboard pour vous connecter.');
+    }
+  }
+
+  // COPY CODE
+  function copyCode() {
+    const code = `const apiKey = "votre_clé_euler";
+const uniqueId = "@votre_username";
+const ws = new WebSocket(\`wss://ws.eulerstream.com?uniqueId=\${uniqueId}&apiKey=\${apiKey}\`);
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  data.messages?.forEach((msg) => {
+    switch(msg.type) {
+      case 'WebcastChatMessage':
+      case 'WebcastGiftMessage':
+      case 'WebcastLikeMessage':
+      case 'WebcastMemberMessage':
+    }
+  });
+};`;
+    navigator.clipboard?.writeText(code);
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'copié ✓';
+    setTimeout(() => btn.textContent = 'copier', 2000);
+  }
+
+  // DEMO SIMULATION
+  const demoUsers = [
+    { name: 'Lysandre_MC', color: '#fe2c55' },
+    { name: 'Nova_Flux', color: '#25f4ee' },
+    { name: 'Elara_LIVE', color: '#a78bfa' },
+    { name: 'ZephyrGames', color: '#f5a623' },
+    { name: 'Kira_World', color: '#00e67a' },
+    { name: 'TechFlux42', color: '#fb7185' },
+    { name: 'AstralVibe', color: '#38bdf8' },
+  ];
+
+  const demoMessages = [
+    'Salut depuis Montréal ! 👋', 'Incroyable ce stream !',
+    'gg gg gg', 'Premier commentaire !', 'On est combien ?',
+    'Trop bien ce gameplay', 'Continuez comme ça !!!',
+    'Je regarde depuis 2h lol', 'Love ce contenu',
+    'FR FR FR', '🔥🔥🔥', 'Abonnez-vous les gens !',
+    'Wow quel moment !', 'On pousse !', 'Merci pour le live',
+  ];
+
+  const demoGifts = ['Rose 🌹', 'Lion 🦁', 'Fusée 🚀', 'Diamant 💎', 'Couronne 👑'];
+
+  let connected = false;
+  let msgCount = 0;
+  let viewers = 0;
+  let likes = 0;
+  let gifts = 0;
+  let simInterval = null;
+
+  function simulateConnect() {
+    const input = document.getElementById('usernameInput');
+    const username = input.value.trim() || '@demo_live';
+    if (!connected) {
+      connected = true;
+      document.getElementById('connectBtnText').textContent = '■ Déconnecter';
+      document.getElementById('connectBtn').style.background = '#1e1e28';
+      document.getElementById('connectBtn').style.borderColor = 'rgba(254,44,85,0.4)';
+      document.getElementById('connectBtn').style.color = 'var(--accent)';
+      document.querySelector('.preview-url').textContent = `wss://ws.eulerstream.com?uniqueId=${username}&apiKey=***`;
+      document.getElementById('live-status').className = 'status-badge status-live';
+      document.getElementById('live-status').textContent = '● LIVE';
+      document.getElementById('chat-dot').style.background = 'var(--accent)';
+      document.getElementById('chat-dot').style.animation = 'pulse 1.5s infinite';
+      viewers = Math.floor(Math.random() * 400) + 50;
+      startSimulation();
+    } else {
+      connected = false;
+      clearInterval(simInterval);
+      document.getElementById('connectBtnText').textContent = 'Se connecter';
+      document.getElementById('connectBtn').style.background = '';
+      document.getElementById('connectBtn').style.borderColor = '';
+      document.getElementById('connectBtn').style.color = '';
+      document.getElementById('live-status').className = 'status-badge status-offline';
+      document.getElementById('live-status').textContent = '● OFFLINE';
+      document.getElementById('chat-dot').style.background = 'var(--text3)';
+      document.getElementById('chat-dot').style.animation = 'none';
+      document.getElementById('chatFeed').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px;font-family:var(--mono)">// déconnecté</div>';
+      document.getElementById('eventFeed').innerHTML = '<span style="font-size:12px;color:var(--text3);font-family:var(--mono)">//  aucun événement</span>';
+    }
+  }
+
+  function startSimulation() {
+    updateStats();
+    simInterval = setInterval(() => {
+      if (!connected) return;
+      const rand = Math.random();
+      if (rand < 0.55) addChatMessage();
+      else if (rand < 0.75) addGiftEvent();
+      else if (rand < 0.88) addFollowEvent();
+      else if (rand < 0.95) addLikeEvent();
+      else addJoinEvent();
+      viewers += Math.floor(Math.random() * 7) - 2;
+      if (viewers < 10) viewers = 10;
+      updateStats();
+    }, 700);
+  }
+
+  function updateStats() {
+    document.getElementById('stat-viewers').textContent = viewers.toLocaleString('fr-FR');
+    document.getElementById('stat-likes').textContent = likes.toLocaleString('fr-FR');
+    document.getElementById('stat-gifts').textContent = gifts.toLocaleString('fr-FR');
+    document.getElementById('stat-viewers-change').style.display = 'block';
+    document.getElementById('stat-likes-change').style.display = 'block';
+    document.getElementById('stat-gifts-change').style.display = 'block';
+  }
+
+  function addChatMessage() {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    const text = demoMessages[Math.floor(Math.random() * demoMessages.length)];
+    const feed = document.getElementById('chatFeed');
+    if (msgCount === 0) feed.innerHTML = '';
+    msgCount++;
+    document.getElementById('msg-count').textContent = msgCount + ' messages';
+    const initials = user.name.slice(0,2).toUpperCase();
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `
+      <div class="chat-avatar" style="background:${user.color}22;color:${user.color};border:1px solid ${user.color}44">${initials}</div>
+      <div class="chat-content" style="flex:1">
+        <div class="chat-user" style="color:${user.color}">${user.name}</div>
+        <div class="chat-text">${text}</div>
+      </div>
+      <div class="chat-time">${time}</div>
+    `;
+    feed.appendChild(div);
+    feed.scrollTop = feed.scrollHeight;
+    if (feed.children.length > 30) feed.removeChild(feed.firstChild);
+  }
+
+  function addGiftEvent() {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    const gift = demoGifts[Math.floor(Math.random() * demoGifts.length)];
+    const val = Math.floor(Math.random() * 50) + 1;
+    gifts += val;
+    addEvent('gift', '🎁', user.name, `a envoyé ${gift}`, `+${val}💎`);
+  }
+  function addFollowEvent() {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    addEvent('follow', '➕', user.name, 'vous suit maintenant', '+1 follower');
+  }
+  function addLikeEvent() {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    const count = Math.floor(Math.random() * 200) + 15;
+    likes += count;
+    addEvent('like', '❤️', user.name, `a liké ${count}x`, `+${count}`);
+  }
+  function addJoinEvent() {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    addEvent('join', '👋', user.name, 'a rejoint le live', 'nouveau');
+  }
+
+  function addEvent(type, icon, user, action, val) {
+    const feed = document.getElementById('eventFeed');
+    if (feed.style.display !== 'block' && feed.children.length <= 1 && feed.querySelector('span')) {
+      feed.innerHTML = '';
+      feed.style.display = 'block';
+    }
+    const div = document.createElement('div');
+    div.className = 'event-item';
+    div.innerHTML = `
+      <div class="event-icon ${type}">${icon}</div>
+      <div class="event-content">
+        <div class="event-title" style="color:var(--text)">${user}</div>
+        <div class="event-user">${action}</div>
+      </div>
+      <div class="event-val ${type}">${val}</div>
+    `;
+    feed.insertBefore(div, feed.firstChild);
+    if (feed.children.length > 8) feed.removeChild(feed.lastChild);
+  }
+  // Check for OAuth callback
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  if (code) {
+    const notice = document.createElement('div');
+    notice.style.cssText = 'position:fixed;top:70px;right:20px;background:var(--bg2);border:1px solid rgba(0,230,122,0.4);border-radius:10px;padding:12px 18px;font-size:13px;z-index:999;color:var(--green);font-family:var(--mono)';
+    notice.textContent = '✓ OAuth callback reçu — échangez le code contre un token JWT';
+    document.body.appendChild(notice);
+    setTimeout(() => notice.remove(), 5000);
+  }
+
+  let giftAnimations = JSON.parse(localStorage.getItem('liveflow_animations')) || {};
+const isOverlayMode = urlParams.get('overlay') === 'true';
+
+if (isOverlayMode) {
+    // Appliquer un style spécial "Overlay" immédiatement
+    const style = document.createElement('style');
+    style.innerHTML = `
+        header, .hero, .section, .sep, footer, .glow-accent, .glow-teal { 
+            display: none !important; 
+        }
+        body { 
+            background: transparent !important; 
+            overflow: hidden !important;
+        }
+        #gift-overlay {
+            display: flex !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+// Charger les previews au démarrage
+window.addEventListener('DOMContentLoaded', () => {
+  Object.keys(giftAnimations).forEach(name => updatePreview(name));
+});
+
+function handleFileUpload(event, giftName) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    giftAnimations[giftName] = {
+      data: e.target.result,
+      type: file.type.startsWith('video') ? 'video' : 'image'
+    };
+    localStorage.setItem('liveflow_animations', JSON.stringify(giftAnimations));
+    updatePreview(giftName);
+  };
+  reader.readAsDataURL(file);
+}
+
+function updatePreview(name) {
+  const config = giftAnimations[name];
+  const container = document.getElementById(`preview-${name}`);
+  const status = document.getElementById(`status-${name}`);
+  if (!config || !container) return;
+
+  status.className = "status-badge status-live";
+  status.textContent = "Actif";
+  
+  if (config.type === 'video') {
+    container.innerHTML = `<video src="${config.data}" class="preview-content" autoplay muted loop></video>`;
+  } else {
+    container.innerHTML = `<img src="${config.data}" class="preview-content">`;
+  }
+}
+
+// Modifier ta fonction addGiftEvent existante pour inclure ceci :
+const originalAddGiftEvent = addGiftEvent; 
+addGiftEvent = function(type, icon, user, action, val) {
+  // On appelle l'ancienne fonction pour garder le flux à droite
+  originalAddGiftEvent(type, icon, user, action, val);
+  
+  // On cherche si une animation existe pour ce cadeau (ex: "Rose 🌹")
+  const giftName = action.replace('a envoyé ', '').trim();
+  if (giftAnimations[giftName]) {
+    triggerGiftOverlay(giftName, user);
+  }
+};
+
+function triggerGiftOverlay(giftName, userName) {
+  const overlay = document.getElementById('gift-overlay');
+  const config = giftAnimations[giftName];
+  
+  const box = document.createElement('div');
+  box.className = 'alert-box';
+  
+  const media = config.type === 'video' 
+    ? `<video src="${config.data}" autoplay style="width:280px; border-radius:12px;"></video>`
+    : `<img src="${config.data}" style="width:280px; border-radius:12px;">`;
+
+  box.innerHTML = `
+    ${media}
+    <div style="font-family:var(--display); font-size:24px; font-weight:800; margin-top:20px; color:white;">
+      ${userName.toUpperCase()}
+    </div>
+    <div style="color:var(--accent); font-family:var(--mono); font-size:14px; margin-top:5px; letter-spacing:2px;">
+      A OFFERT UN CADEAU : ${giftName.toUpperCase()}
+    </div>
+  `;
+
+  overlay.appendChild(box);
+  setTimeout(() => {
+    box.style.opacity = '0';
+    box.style.transform = 'scale(0.9) translateY(-20px)';
+    box.style.transition = 'all 0.5s ease';
+    setTimeout(() => box.remove(), 500);
+  }, 4000);
+}
+
+
+</script>
+</body>
+</html>
